@@ -1,0 +1,107 @@
+library(twitteR)
+library(ROAuth)
+require(RCurl)
+library(stringr)
+library(tm)
+library(NLP)
+library(plyr)
+library(wordcloud)
+
+download.file(url="http://curl.haxx.se/ca/cacert.pem", destfile="cacert.pem")
+
+Consumer_Key = "key"
+Consumer_Secret = "key"
+Access_Token = "key"
+Acess_Token_Secret="key"
+
+setup_twitter_oauth(Consumer_Key,Consumer_Secret,Access_Token,Acess_Token_Secret)
+
+Modi <- searchTwitter("Narendra + Modi", n=1500, lang='en', since='2016-06-01', until='2016-08-06')
+rahul <- searchTwitter("Rahul + Gandhi", n=1500, lang='en', since='2016-06-01', until='2016-08-06')
+
+#We are getting text
+moditext=sapply(Modi,function(x) x$getText())
+rahultext=sapply(rahul,function(x) x$getText())
+
+#We are getting Number of tweets
+
+Tweetnum = c(length(moditext),length(rahultext))
+
+#Well,Combining All tweets all together
+
+Tweets=c(moditext,rahultext)
+
+#Now Actullal data mining concept comes under the pic so first of all we are clearing non-aplha numric characters here we are using lapply function
+
+Tweets=sapply(Tweets, function(x) iconv(x,"latin1","ASCII",sub=" "))
+Tweets=gsub("(RT|via)((?:\\b\\W*@\\w+\\htt+)+)", "", Tweets)
+
+
+#Getting Start with with wordcloud
+ 
+# Creating Corpus
+ Tweetcorpus=Corpus(VectorSource(Tweets))
+
+# Converting to tweets to  lower case 
+ 
+ Tweetcorpus =tm_map(Tweetcorpus,tolower)
+ 
+#Removing punctutation from tweet
+ 
+
+ 
+Tweetcorpus=tm_map(Tweetcorpus,stripWhitespace)
+
+#Now we are removing stopwords
+ 
+Tweetcorpus=tm_map(Tweetcorpus,function(x) removeWords(x,stopwords("en")))
+#Tweetcorpus=gsub("(RT|via)((?:\\b\\W*@\\w+)+)", "", Tweetcorpus)
+
+
+#Removing punctutation from tweet
+
+Tweetcorpus=tm_map(Tweetcorpus,removePunctuation)
+
+
+#Before getting wordcloud we have to get in into text document 
+ 
+Tweet_mat=tm_map(Tweetcorpus,PlainTextDocument)
+ 
+#Now making Document Tearm Matrix
+ 
+ dtm=DocumentTermMatrix(Tweet_mat)
+
+#Converting into matrix
+ 
+ dtmfinal=as.matrix(dtm)
+ 
+ #Getting most used words in tweets 
+ 
+ freq=colSums(dtmfinal)
+ freq=sort(freq,decreasing = TRUE)
+ 
+# #here we found that there are many words they come again and again we have to remove them off!
+# #For our example we are getting 
+# #modi gandhi rahul narendra andhra status special via pradesh attacks so we have to remove them out
+ 
+ 
+ Tweetcorpus=tm_map(Tweetcorpus,removeWords,stopwords("english"))
+# Tweetcorpus=gsub("(RT|via)((?:\\b\\W*@\\w+)+)", "", Tweetcorpus)
+ Tweetcorpus=tm_map(Tweetcorpus,removeWords,c("modi","gandhi","rahul","narendra","andhra","status","special","via","pradesh","attacks","httpstc","https"))
+ Tweetcorpus=tm_map(Tweetcorpus,removePunctuation)
+ Tweetcorpus=tm_map(Tweetcorpus,stripWhitespace)
+# 
+ tweet_dtm=tm_map(Tweetcorpus,PlainTextDocument)
+ dtm=DocumentTermMatrix(tweet_dtm)
+ dtmfinal=as.matrix(dtm)
+ 
+ freq=colSums(dtmfinal)
+ 
+ freq=sort(freq,decreasing = TRUE)
+ #pal pal pal
+ pal=brewer.pal(8,"Dark2")
+ 
+ wordcloud(words[1:50],freq[1:60],colors = pal)
+
+
+
